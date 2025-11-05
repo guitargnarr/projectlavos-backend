@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
+import os
+from anthropic import Anthropic
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -73,6 +75,18 @@ class PhishingResponse(BaseModel):
     risk_level: str  # Safe, Suspicious, Dangerous
     indicators: List[str]
     recommendation: str
+
+class PromptRequest(BaseModel):
+    technique: str  # zero-shot, few-shot, chain-of-thought, role-based, structured
+    use_case: str  # email, blog, summary, custom
+    context: str = Field(..., min_length=10, max_length=2000)
+    tone: str  # professional, technical, casual, persuasive
+
+class PromptResponse(BaseModel):
+    generated_content: str
+    prompt_used: Dict[str, str]  # {"system": "...", "user": "..."}
+    technique_name: str
+    explanation: str
 
 # ============================================================================
 # DEMO 1: SENTIMENT ANALYSIS
@@ -298,6 +312,278 @@ async def phishing_detection(request: PhishingRequest):
         raise HTTPException(status_code=500, detail="Detection failed")
 
 # ============================================================================
+# DEMO 4: PROMPT ENGINEERING PLAYGROUND
+# ============================================================================
+
+# Initialize Anthropic client
+client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+
+def build_zero_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
+    """
+    Zero-shot: Direct request with role definition, no examples
+    Best for: Simple tasks, general knowledge, straightforward generation
+    """
+    system_prompt = f"You are a professional {use_case} writer with expertise in creating clear, compelling content."
+
+    user_prompt = f"""Write a {use_case} with the following specifications:
+
+Context: {context}
+Tone: {tone}
+Length: Appropriate for a {use_case}
+
+Requirements:
+- Be clear and concise
+- Match the requested tone
+- Make it actionable and engaging"""
+
+    explanation = """**Zero-Shot Prompting**
+
+What it is: Direct instruction without examples. The model uses its training to understand the task.
+
+Why it works: Modern LLMs are trained on vast amounts of text and can generalize well to new tasks without explicit examples.
+
+When to use: Simple, well-defined tasks where the model's general knowledge is sufficient. Fastest and most token-efficient approach.
+
+Strengths: Fast, token-efficient, works for most common tasks
+Limitations: May struggle with highly specific formats or uncommon tasks"""
+
+    return system_prompt, user_prompt, explanation
+
+def build_few_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
+    """
+    Few-shot: Include 2-3 examples to guide the model's output
+    Best for: Specific formats, style consistency, pattern replication
+    """
+    # Define examples based on use case
+    examples = {
+        "email": [
+            {"input": "Meeting reschedule", "output": "Subject: Rescheduling Our Meeting - New Time Proposed\n\nHi [Name],\n\nI hope this email finds you well. Unfortunately, I need to reschedule our meeting originally planned for [date/time]. Would [new date/time] work for your schedule?\n\nI apologize for any inconvenience and look forward to connecting soon.\n\nBest regards,\n[Your name]"},
+            {"input": "Project update", "output": "Subject: Weekly Project Update - On Track\n\nHi Team,\n\nQuick update on Project X: We've completed Phase 1 (design) and are moving into Phase 2 (development) as planned. Timeline remains on schedule for Q2 delivery.\n\nNext steps: Engineering kick-off meeting this Thursday.\n\nLet me know if you have questions.\n\nBest,\n[Your name]"}
+        ],
+        "blog": [
+            {"input": "AI in healthcare", "output": "# The AI Revolution in Healthcare: What Doctors and Patients Need to Know\n\nArtificial intelligence is transforming healthcare at an unprecedented pace. From diagnostic imaging to treatment planning, AI systems are augmenting—not replacing—the expertise of medical professionals.\n\nHere's what you need to know about this revolution..."},
+        ]
+    }
+
+    example_text = ""
+    if use_case.lower() in examples:
+        for i, ex in enumerate(examples[use_case.lower()][:2], 1):
+            example_text += f"\nExample {i}:\nContext: {ex['input']}\nOutput:\n{ex['output']}\n"
+
+    system_prompt = f"You are an expert {use_case} writer. Follow the style and format shown in the examples below."
+
+    user_prompt = f"""You will write content following the patterns shown in these examples:
+{example_text if example_text else 'Follow professional standards for ' + use_case + ' writing.'}
+
+Now write a {use_case} with these specifications:
+Context: {context}
+Tone: {tone}
+
+Match the format and style from the examples above."""
+
+    explanation = """**Few-Shot Prompting**
+
+What it is: Provide 2-5 examples of the desired output format before the actual request. The model learns the pattern from examples.
+
+Why it works: LLMs excel at pattern recognition. Concrete examples clarify expectations better than abstract instructions.
+
+When to use: When you need specific formatting, consistent style across outputs, or the task is unusual/specialized.
+
+Strengths: Better accuracy for specific formats, style consistency, handles edge cases
+Limitations: Uses more tokens (costs more), examples must be high-quality"""
+
+    return system_prompt, user_prompt, explanation
+
+def build_chain_of_thought_prompt(use_case: str, context: str, tone: str) -> tuple:
+    """
+    Chain-of-thought: Request step-by-step reasoning before the final output
+    Best for: Complex tasks, ensuring quality, transparent decision-making
+    """
+    system_prompt = f"You are an expert {use_case} writer who thinks carefully through each aspect before writing."
+
+    user_prompt = f"""I need you to write a {use_case}. Before writing the final version, please think through this step-by-step:
+
+Context: {context}
+Tone: {tone}
+
+Please follow this thought process:
+1. First, identify the key message and goal
+2. Consider the audience and what they need to know
+3. Outline the main points to cover
+4. Choose the most effective structure
+5. Write the final version
+
+Show your reasoning for steps 1-4, then provide the final polished {use_case}."""
+
+    explanation = """**Chain-of-Thought Prompting**
+
+What it is: Ask the model to "think out loud" and show its reasoning process before generating the final output.
+
+Why it works: Breaking complex tasks into steps improves accuracy. The model's intermediate reasoning helps it avoid errors and produce better final outputs.
+
+When to use: Complex tasks requiring planning, quality-critical outputs, when you want to verify the reasoning behind the output.
+
+Strengths: Higher accuracy on complex tasks, transparent reasoning, catches logical errors
+Limitations: Much longer responses (higher cost/latency), verbose output"""
+
+    return system_prompt, user_prompt, explanation
+
+def build_role_based_prompt(use_case: str, context: str, tone: str) -> tuple:
+    """
+    Role-based: Assign expert persona with specific expertise and perspective
+    Best for: Specialized content, authoritative voice, technical accuracy
+    """
+    roles = {
+        "email": "senior business communications expert with 15 years of experience in professional correspondence",
+        "blog": "professional content strategist and storyteller who creates engaging, SEO-optimized articles",
+        "summary": "executive briefing specialist who distills complex information into clear, actionable insights",
+        "custom": "versatile professional writer with expertise across multiple domains"
+    }
+
+    role = roles.get(use_case.lower(), roles["custom"])
+
+    system_prompt = f"""You are a {role}.
+
+Your expertise includes:
+- Understanding audience needs and context
+- Crafting messages that achieve specific goals
+- Maintaining appropriate tone and professionalism
+- Delivering clear, actionable content
+
+Apply your professional judgment and experience to this task."""
+
+    user_prompt = f"""As an expert in your field, please create a {use_case} for this situation:
+
+Context: {context}
+Desired tone: {tone}
+
+Use your expertise to determine:
+- The most effective structure
+- Key points to emphasize
+- Appropriate level of detail
+- Best practices for this type of communication
+
+Deliver a polished, professional result."""
+
+    explanation = """**Role-Based Prompting**
+
+What it is: Assign the model a specific expert role/persona with defined expertise, perspective, and professional standards.
+
+Why it works: Activating a "role" in the model's training data helps it access relevant knowledge and writing styles. The model generates content consistent with that expert's perspective.
+
+When to use: Specialized or technical content, when you need authoritative voice, industry-specific terminology, professional standards.
+
+Strengths: Access to specialized knowledge, appropriate professional tone, industry-standard formats
+Limitations: May be overly formal, could include unnecessary technical jargon if not balanced"""
+
+    return system_prompt, user_prompt, explanation
+
+def build_structured_output_prompt(use_case: str, context: str, tone: str) -> tuple:
+    """
+    Structured output: Specify exact format (JSON, Markdown, etc.) with schema
+    Best for: Programmatic use, consistent parsing, integration with other systems
+    """
+    system_prompt = f"You are a {use_case} writing assistant that produces well-structured, formatted content."
+
+    user_prompt = f"""Create a {use_case} with the following requirements:
+
+Context: {context}
+Tone: {tone}
+
+Format your response as structured content with clear sections:
+
+## Main Content
+[Your primary {use_case} content here]
+
+## Key Points
+- [Bullet point 1]
+- [Bullet point 2]
+- [Bullet point 3]
+
+## Metadata
+- Word count: [count]
+- Tone achieved: {tone}
+- Target audience: [describe]
+
+Ensure each section is clearly marked and formatted consistently."""
+
+    explanation = """**Structured Output Prompting**
+
+What it is: Specify exact output format with clear schema, sections, or data structure (JSON, Markdown, XML, etc.).
+
+Why it works: Explicit formatting instructions ensure consistent, parseable outputs. Reduces post-processing and enables programmatic use.
+
+When to use: When outputs need to be parsed by other systems, consistency is critical, or you need to extract specific fields reliably.
+
+Strengths: Perfect for automation, consistent format, easy to parse programmatically, no post-processing
+Limitations: Less natural/conversational output, may feel rigid, requires careful schema design"""
+
+    return system_prompt, user_prompt, explanation
+
+async def generate_with_claude(system_prompt: str, user_prompt: str) -> str:
+    """Call Claude API with the engineered prompts"""
+    try:
+        message = client.messages.create(
+            model="claude-3-5-haiku-20241022",  # Fast, cost-efficient for demos
+            max_tokens=1000,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        return message.content[0].text
+    except Exception as e:
+        logger.error(f"Claude API error: {e}")
+        raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
+
+@app.post("/api/prompt-engineering", response_model=PromptResponse)
+async def prompt_engineering_demo(request: PromptRequest):
+    """
+    Demonstrate advanced prompt engineering techniques with real LLM calls.
+    Techniques: zero-shot, few-shot, chain-of-thought, role-based, structured output
+    """
+    try:
+        # Select technique and build prompts
+        technique_builders = {
+            "zero-shot": build_zero_shot_prompt,
+            "few-shot": build_few_shot_prompt,
+            "chain-of-thought": build_chain_of_thought_prompt,
+            "role-based": build_role_based_prompt,
+            "structured": build_structured_output_prompt
+        }
+
+        if request.technique not in technique_builders:
+            raise HTTPException(status_code=400, detail=f"Unknown technique: {request.technique}")
+
+        # Build prompts for selected technique
+        builder = technique_builders[request.technique]
+        system_prompt, user_prompt, explanation = builder(
+            request.use_case,
+            request.context,
+            request.tone
+        )
+
+        # Generate content with Claude
+        generated_content = await generate_with_claude(system_prompt, user_prompt)
+
+        # Return comprehensive response
+        return PromptResponse(
+            generated_content=generated_content,
+            prompt_used={
+                "system": system_prompt,
+                "user": user_prompt
+            },
+            technique_name=request.technique.replace("-", " ").title(),
+            explanation=explanation
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Prompt engineering error: {e}")
+        raise HTTPException(status_code=500, detail="Demo failed")
+
+# ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
 
@@ -311,7 +597,8 @@ def root():
         "demos": {
             "sentiment": "/api/sentiment - Analyze text sentiment",
             "leads": "/api/leads - Score sales leads",
-            "phishing": "/api/phishing - Detect phishing emails"
+            "phishing": "/api/phishing - Detect phishing emails",
+            "prompt-engineering": "/api/prompt-engineering - Advanced LLM prompt techniques"
         },
         "website": "https://projectlavos.com",
         "portfolio": "https://jaspermatters.com",
@@ -323,8 +610,8 @@ def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "demos_available": 3,
-        "version": "1.0.0"
+        "demos_available": 4,
+        "version": "1.1.0"
     }
 
 # ============================================================================
