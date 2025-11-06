@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Project Lavos - AI Demos",
     description="Practical AI tools for Louisville businesses - Matthew Scott",
-    version="1.0.0",
+    version="1.2.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -656,11 +656,12 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with contact form support"""
     return {
         "status": "healthy",
         "demos_available": 4,
-        "version": "1.1.0"
+        "version": "1.2.0",
+        "contact_form": "enabled"
     }
 
 # ============================================================================
