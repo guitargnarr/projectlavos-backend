@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Project Lavos - AI Demos",
     description="Practical AI tools for Louisville businesses - Matthew Scott",
-    version="1.2.0",
+    version="1.2.1",
     docs_url="/docs",
     redoc_url="/redoc"
 )
