@@ -1,0 +1,33 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render Deploy
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$deploy_url" ]; then
+            echo "❌ ERROR: RENDER_DEPLOY_HOOK_URL secret not set"
+            echo "Please add the deploy hook URL to GitHub secrets"
+            exit 1
+          fi
+
+          echo "🚀 Triggering deployment to Render..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$deploy_url")
+
+          if [ "$response" -eq 200 ] || [ "$response" -eq 201 ]; then
+            echo "✅ Deployment triggered successfully (HTTP $response)"
+            echo "Visit https://dashboard.render.com to monitor progress"
+          else
+            echo "⚠️  Received HTTP $response - deployment may have failed"
+            exit 1
+          fi
