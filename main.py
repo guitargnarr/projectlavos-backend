@@ -88,6 +88,16 @@ class PromptResponse(BaseModel):
     technique_name: str
     explanation: str
 
+class ContactRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: str = Field(..., min_length=3, max_length=200)
+    businessType: str = Field(..., min_length=1, max_length=100)
+    challenge: str = Field(..., min_length=10, max_length=2000)
+
+class ContactResponse(BaseModel):
+    success: bool
+    message: str
+
 # ============================================================================
 # DEMO 1: SENTIMENT ANALYSIS
 # ============================================================================
@@ -584,6 +594,44 @@ async def prompt_engineering_demo(request: PromptRequest):
         raise HTTPException(status_code=500, detail="Demo failed")
 
 # ============================================================================
+# CONTACT FORM
+# ============================================================================
+
+@app.post("/api/contact", response_model=ContactResponse)
+async def submit_contact_form(request: ContactRequest):
+    """
+    Handle contact form submissions from projectlavos.com
+    Logs inquiries and sends notification email (future: integrate SendGrid/SMTP)
+    """
+    try:
+        # Log the contact request (visible in Render.com logs)
+        logger.info(f"""
+        ========================================
+        NEW CONTACT FORM SUBMISSION
+        ========================================
+        Name: {request.name}
+        Email: {request.email}
+        Business Type: {request.businessType}
+        Challenge: {request.challenge}
+        ========================================
+        """)
+
+        # TODO: Send email notification via SendGrid/SMTP
+        # For now, logging is sufficient - user can check Render logs
+
+        return ContactResponse(
+            success=True,
+            message="Thank you! Your message has been received. I'll respond within 24 hours."
+        )
+
+    except Exception as e:
+        logger.error(f"Contact form error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to submit contact form. Please email matthewdscott7@gmail.com directly."
+        )
+
+# ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
 
@@ -600,6 +648,7 @@ def root():
             "phishing": "/api/phishing - Detect phishing emails",
             "prompt-engineering": "/api/prompt-engineering - Advanced LLM prompt techniques"
         },
+        "contact": "/api/contact - Submit contact form",
         "website": "https://projectlavos.com",
         "portfolio": "https://jaspermatters.com",
         "github": "https://github.com/guitargnarr"
