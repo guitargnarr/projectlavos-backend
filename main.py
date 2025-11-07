@@ -700,10 +700,8 @@ async def analyze_restaurant(request: RestaurantRequest):
         # Load restaurant data
         if not data_path.exists():
             raise HTTPException(
-                status_code=404,
-                detail=f"Restaurant '{
-                    request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood"
-            )
+                status_code=404, detail=f"Restaurant '{
+                    request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood")
 
         with open(data_path, "r") as f:
             restaurant_data = json.load(f)
@@ -743,7 +741,10 @@ Return your analysis in this exact JSON format:
   ]
 }"""
 
-        user_prompt = f"""Analyze these reviews for {restaurant_data['restaurant']} ({restaurant_data['cuisine']} cuisine) in {restaurant_data['location']}:
+        user_prompt = f"""Analyze these reviews for {
+            restaurant_data['restaurant']} ({
+            restaurant_data['cuisine']} cuisine) in {
+            restaurant_data['location']}:
 
 {reviews_text}
 
