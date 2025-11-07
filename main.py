@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Project Lavos - AI Demos",
     description="Practical AI tools for Louisville businesses - Matthew Scott",
-    version="1.2.1",
+    version="1.4.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -131,6 +131,20 @@ class RestaurantResponse(BaseModel):
     sample_positive: str
     sample_negative: str
     recommendations: List[str]
+
+
+class EmailScorerRequest(BaseModel):
+    subject: str = Field(..., min_length=1, max_length=200, description="Email subject line")
+    body: str = Field(..., min_length=10, max_length=5000, description="Email body content")
+    recipient_type: Optional[str] = Field(default="business", description="Type of recipient: business, consumer, executive")
+
+
+class EmailScorerResponse(BaseModel):
+    score: int  # 1-10 overall effectiveness score
+    strengths: List[str]  # What the email does well
+    improvements: List[str]  # Specific suggestions for improvement
+    revised_subject: Optional[str]  # Improved subject line suggestion
+    key_metrics: Dict[str, int]  # {"clarity": 8, "persuasion": 6, "call_to_action": 7}
 
 # ============================================================================
 # DEMO 1: SENTIMENT ANALYSIS
@@ -795,6 +809,98 @@ Provide your analysis in the JSON format specified."""
         logger.error(f"Restaurant analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+
+# ============================================================================
+# DEMO 6: SALES EMAIL SCORER
+# ============================================================================
+
+
+@app.post("/api/score-email", response_model=EmailScorerResponse)
+async def score_sales_email(request: EmailScorerRequest):
+    """
+    Score sales/marketing email effectiveness with AI-powered analysis
+    Provides specific suggestions for improving open rates and conversions
+    """
+    try:
+        # Initialize Anthropic client
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+        # Build the scoring prompt
+        system_prompt = """You are an expert email marketing consultant who analyzes sales emails for effectiveness.
+
+        You will score emails on a 1-10 scale and provide actionable feedback.
+
+        Consider these factors:
+        1. Subject line effectiveness (attention-grabbing, clear value proposition)
+        2. Opening hook (first 2 sentences)
+        3. Clarity of message (easy to scan and understand)
+        4. Value proposition (what's in it for the reader)
+        5. Call to action (clear, specific, compelling)
+        6. Length and formatting (appropriate for context)
+        7. Personalization and relevance
+        8. Tone and professionalism
+
+        Provide your response in the following JSON format:
+        {
+            "score": [1-10 integer],
+            "strengths": ["strength 1", "strength 2", "strength 3"],
+            "improvements": ["improvement 1", "improvement 2", "improvement 3"],
+            "revised_subject": "Improved subject line suggestion",
+            "key_metrics": {
+                "clarity": [1-10],
+                "persuasion": [1-10],
+                "call_to_action": [1-10],
+                "personalization": [1-10],
+                "professionalism": [1-10]
+            }
+        }"""
+
+        user_prompt = f"""Analyze this sales email for a {request.recipient_type} recipient:
+
+        Subject: {request.subject}
+
+        Body:
+        {request.body}
+
+        Provide a comprehensive analysis with specific, actionable improvements."""
+
+        # Call Claude API
+        response = client.messages.create(
+            model="claude-3-5-haiku-20241022",  # Fast, cost-efficient
+            max_tokens=1000,
+            temperature=0.3,  # Lower temperature for consistent scoring
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+
+        # Parse the response
+        analysis = json.loads(response.content[0].text)
+
+        # Ensure all required fields are present
+        return EmailScorerResponse(
+            score=analysis["score"],
+            strengths=analysis["strengths"][:3],  # Limit to top 3
+            improvements=analysis["improvements"][:3],  # Limit to top 3
+            revised_subject=analysis.get("revised_subject"),
+            key_metrics=analysis["key_metrics"]
+        )
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Claude response: {e}")
+        # Fallback to simple scoring
+        return EmailScorerResponse(
+            score=5,
+            strengths=["Email submitted successfully", "Basic structure present"],
+            improvements=["Unable to provide AI analysis at this time", "Please try again"],
+            revised_subject=request.subject,
+            key_metrics={"clarity": 5, "persuasion": 5, "call_to_action": 5, "personalization": 5, "professionalism": 5}
+        )
+    except Exception as e:
+        logger.error(f"Email scoring error: {e}")
+        raise HTTPException(status_code=500, detail=f"Email scoring failed: {str(e)}")
+
 # ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
@@ -812,7 +918,8 @@ def root():
             "leads": "/api/leads - Score sales leads",
             "phishing": "/api/phishing - Detect phishing emails",
             "prompt-engineering": "/api/prompt-engineering - Advanced LLM prompt techniques",
-            "restaurant-analyzer": "/api/analyze-restaurant - Analyze Louisville restaurant reviews"
+            "restaurant-analyzer": "/api/analyze-restaurant - Analyze Louisville restaurant reviews",
+            "email-scorer": "/api/score-email - Score sales email effectiveness"
         },
         "contact": "/api/contact - Submit contact form",
         "website": "https://projectlavos.com",
@@ -823,13 +930,14 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint with restaurant analyzer and contact form support"""
+    """Health check endpoint with all demos and features"""
     return {
         "status": "healthy",
-        "demos_available": 5,
-        "version": "1.3.0",
+        "demos_available": 6,
+        "version": "1.4.0",
         "contact_form": "enabled",
-        "restaurant_analyzer": "enabled"
+        "restaurant_analyzer": "enabled",
+        "email_scorer": "enabled"
     }
 
 # ============================================================================
