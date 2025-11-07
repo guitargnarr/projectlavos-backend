@@ -1,0 +1,30 @@
+{
+  "good_examples": [
+    {
+      "name": "AI Consulting - Louisville Restaurant",
+      "subject": "Cut Your Restaurant's Review Analysis Time by 10 Hours/Week",
+      "body": "Hi Sarah,\n\nI noticed Proof on Main has over 500 Google reviews - that's fantastic! But I imagine analyzing all that feedback to find actionable insights takes your team hours each week.\n\nI've built an AI tool specifically for Louisville restaurants that analyzes all your reviews in seconds and gives you:\n• Key themes customers mention most\n• Actionable recommendations to improve satisfaction\n• Real-time sentiment tracking\n\nWould you be interested in a free 15-minute demo next Tuesday or Thursday? I'll analyze Proof on Main's reviews live and show you exactly what customers are saying.\n\nNo sales pressure - just showing a local tool that could save you 10+ hours per week.\n\nBest,\nMatthew Scott\nLouisville AI Consultant\nPS: You can try it yourself right now at demos.projectlavos.com",
+      "recipient_type": "business"
+    },
+    {
+      "name": "SaaS Product Launch",
+      "subject": "Your team asked for this feature - it's finally here",
+      "body": "Hey Michael,\n\nRemember when your team said they needed automated report scheduling? We listened.\n\nStarting today, you can:\n✓ Schedule any report to run daily, weekly, or monthly\n✓ Auto-send to unlimited team members\n✓ Export in PDF, Excel, or CSV formats\n\nThis feature is live in your account right now. Here's a 2-minute video showing how to set it up: [link]\n\nQuick stat: Beta users saved an average of 6 hours/week on reporting.\n\nWant me to walk your team through it? I have 15-minute slots open tomorrow at 2pm or 3pm EST.\n\nLet me know!\nAlex Chen\nCustomer Success Manager\n\nP.S. This feature is included in your current plan - no additional cost.",
+      "recipient_type": "business"
+    }
+  ],
+  "bad_examples": [
+    {
+      "name": "Generic Spam",
+      "subject": "Revolutionary AI Solution for Your Business!!!",
+      "body": "Dear Sir/Madam,\n\nGreetings!\n\nWe are excited to introduce our cutting-edge, revolutionary, game-changing AI platform that will transform your business overnight! Our solution uses advanced machine learning algorithms and neural networks to optimize your workflows and increase productivity by 500%!!!\n\nOur comprehensive suite of tools includes:\n- Artificial Intelligence\n- Machine Learning\n- Deep Learning\n- Natural Language Processing\n- Computer Vision\n- Blockchain Integration\n- Quantum Computing\n- And much more!\n\nWe guarantee results or your money back! Act now and receive 50% off our already low prices! This offer expires soon!\n\nOur award-winning platform has been featured in numerous publications and is trusted by Fortune 500 companies worldwide.\n\nClick here to schedule a demo: [suspicious link]\n\nDon't miss this opportunity to revolutionize your business!\n\nBest Regards,\nJohn Smith\nSenior Sales Executive\nAI Solutions Inc.\n\nP.S. Forward this email to 10 colleagues and receive an additional discount!",
+      "recipient_type": "business"
+    },
+    {
+      "name": "Unfocused Pitch",
+      "subject": "Hi",
+      "body": "Hello,\n\nI hope this email finds you well. I am reaching out to you today because I wanted to tell you about what we do. We are a company that does many things and we think you might be interested.\n\nWe have been in business for a while and have some clients. Our services could maybe help your business in various ways. We do consulting and also software and sometimes training. It really depends on what you need.\n\nIf you want to learn more, you can maybe give us a call or send an email back. We're pretty flexible with our pricing and can probably work something out.\n\nAnyway, let me know if you want to chat sometime. Or not, that's fine too.\n\nThanks for your time and consideration of this matter.\n\nRegards,\nBob",
+      "recipient_type": "business"
+    }
+  ]
+}
