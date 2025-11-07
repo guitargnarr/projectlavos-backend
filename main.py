@@ -44,13 +44,16 @@ app.add_middleware(
 # MODELS (Request/Response schemas)
 # ============================================================================
 
+
 class SentimentRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000, description="Text to analyze")
+
 
 class SentimentResponse(BaseModel):
     sentiment: str
     confidence: float
     explanation: str
+
 
 class LeadRequest(BaseModel):
     name: str
@@ -60,16 +63,19 @@ class LeadRequest(BaseModel):
     budget: Optional[str] = None
     timeline: Optional[str] = None
 
+
 class LeadResponse(BaseModel):
     score: int  # 0-100
     priority: str  # High, Medium, Low
     reasoning: str
     next_action: str
 
+
 class PhishingRequest(BaseModel):
     sender: str
     subject: str
     body: str
+
 
 class PhishingResponse(BaseModel):
     is_phishing: bool
@@ -78,11 +84,13 @@ class PhishingResponse(BaseModel):
     indicators: List[str]
     recommendation: str
 
+
 class PromptRequest(BaseModel):
     technique: str  # zero-shot, few-shot, chain-of-thought, role-based, structured
     use_case: str  # email, blog, summary, custom
     context: str = Field(..., min_length=10, max_length=2000)
     tone: str  # professional, technical, casual, persuasive
+
 
 class PromptResponse(BaseModel):
     generated_content: str
@@ -90,24 +98,29 @@ class PromptResponse(BaseModel):
     technique_name: str
     explanation: str
 
+
 class ContactRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: str = Field(..., min_length=3, max_length=200)
     businessType: str = Field(..., min_length=1, max_length=100)
     challenge: str = Field(..., min_length=10, max_length=2000)
 
+
 class ContactResponse(BaseModel):
     success: bool
     message: str
+
 
 class RestaurantRequest(BaseModel):
     restaurant_name: str = Field(..., min_length=1, max_length=200, description="Restaurant name to analyze")
     location: Optional[str] = Field("Louisville, KY", max_length=100)
 
+
 class Theme(BaseModel):
     theme: str
     mentions: int
     sentiment: str  # positive, negative, mixed
+
 
 class RestaurantResponse(BaseModel):
     restaurant: str
@@ -123,6 +136,7 @@ class RestaurantResponse(BaseModel):
 # DEMO 1: SENTIMENT ANALYSIS
 # ============================================================================
 
+
 def analyze_sentiment_simple(text: str) -> Dict:
     """
     Simple sentiment analysis using keyword-based approach
@@ -133,10 +147,10 @@ def analyze_sentiment_simple(text: str) -> Dict:
 
     # Positive indicators
     positive_words = ['great', 'excellent', 'amazing', 'love', 'fantastic',
-                     'wonderful', 'best', 'awesome', 'perfect', 'outstanding']
+                      'wonderful', 'best', 'awesome', 'perfect', 'outstanding']
     # Negative indicators
     negative_words = ['terrible', 'awful', 'horrible', 'hate', 'worst',
-                     'disgusting', 'disappointing', 'poor', 'bad', 'never']
+                      'disgusting', 'disappointing', 'poor', 'bad', 'never']
 
     positive_count = sum(1 for word in positive_words if word in text_lower)
     negative_count = sum(1 for word in negative_words if word in text_lower)
@@ -160,6 +174,7 @@ def analyze_sentiment_simple(text: str) -> Dict:
         "explanation": explanation
     }
 
+
 @app.post("/api/sentiment", response_model=SentimentResponse)
 async def sentiment_analysis(request: SentimentRequest):
     """
@@ -176,6 +191,7 @@ async def sentiment_analysis(request: SentimentRequest):
 # ============================================================================
 # DEMO 2: LEAD SCORING
 # ============================================================================
+
 
 def score_lead_simple(lead: LeadRequest) -> Dict:
     """
@@ -247,6 +263,7 @@ def score_lead_simple(lead: LeadRequest) -> Dict:
         "next_action": next_action
     }
 
+
 @app.post("/api/leads", response_model=LeadResponse)
 async def lead_scoring(request: LeadRequest):
     """
@@ -263,6 +280,7 @@ async def lead_scoring(request: LeadRequest):
 # ============================================================================
 # DEMO 3: PHISHING DETECTION
 # ============================================================================
+
 
 def detect_phishing_simple(sender: str, subject: str, body: str) -> Dict:
     """
@@ -287,7 +305,7 @@ def detect_phishing_simple(sender: str, subject: str, body: str) -> Dict:
 
     # Suspicious body content
     phishing_keywords = ['click here', 'verify account', 'confirm identity', 'reset password',
-                        'wire transfer', 'bank account', 'social security', 'gift card']
+                         'wire transfer', 'bank account', 'social security', 'gift card']
     body_lower = body.lower()
     found_keywords = [kw for kw in phishing_keywords if kw in body_lower]
     if found_keywords:
@@ -329,6 +347,7 @@ def detect_phishing_simple(sender: str, subject: str, body: str) -> Dict:
         "recommendation": recommendation
     }
 
+
 @app.post("/api/phishing", response_model=PhishingResponse)
 async def phishing_detection(request: PhishingRequest):
     """
@@ -348,6 +367,7 @@ async def phishing_detection(request: PhishingRequest):
 
 # Initialize Anthropic client
 client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+
 
 def build_zero_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
     """
@@ -380,6 +400,7 @@ Limitations: May struggle with highly specific formats or uncommon tasks"""
 
     return system_prompt, user_prompt, explanation
 
+
 def build_few_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
     """
     Few-shot: Include 2-3 examples to guide the model's output
@@ -388,8 +409,10 @@ def build_few_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
     # Define examples based on use case
     examples = {
         "email": [
-            {"input": "Meeting reschedule", "output": "Subject: Rescheduling Our Meeting - New Time Proposed\n\nHi [Name],\n\nI hope this email finds you well. Unfortunately, I need to reschedule our meeting originally planned for [date/time]. Would [new date/time] work for your schedule?\n\nI apologize for any inconvenience and look forward to connecting soon.\n\nBest regards,\n[Your name]"},
-            {"input": "Project update", "output": "Subject: Weekly Project Update - On Track\n\nHi Team,\n\nQuick update on Project X: We've completed Phase 1 (design) and are moving into Phase 2 (development) as planned. Timeline remains on schedule for Q2 delivery.\n\nNext steps: Engineering kick-off meeting this Thursday.\n\nLet me know if you have questions.\n\nBest,\n[Your name]"}
+            {"input": "Meeting reschedule",
+             "output": "Subject: Rescheduling Our Meeting - New Time Proposed\n\nHi [Name],\n\nI hope this email finds you well. Unfortunately, I need to reschedule our meeting originally planned for [date/time]. Would [new date/time] work for your schedule?\n\nI apologize for any inconvenience and look forward to connecting soon.\n\nBest regards,\n[Your name]"},
+            {"input": "Project update",
+             "output": "Subject: Weekly Project Update - On Track\n\nHi Team,\n\nQuick update on Project X: We've completed Phase 1 (design) and are moving into Phase 2 (development) as planned. Timeline remains on schedule for Q2 delivery.\n\nNext steps: Engineering kick-off meeting this Thursday.\n\nLet me know if you have questions.\n\nBest,\n[Your name]"}
         ],
         "blog": [
             {"input": "AI in healthcare", "output": "# The AI Revolution in Healthcare: What Doctors and Patients Need to Know\n\nArtificial intelligence is transforming healthcare at an unprecedented pace. From diagnostic imaging to treatment planning, AI systems are augmenting—not replacing—the expertise of medical professionals.\n\nHere's what you need to know about this revolution..."},
@@ -425,6 +448,7 @@ Limitations: Uses more tokens (costs more), examples must be high-quality"""
 
     return system_prompt, user_prompt, explanation
 
+
 def build_chain_of_thought_prompt(use_case: str, context: str, tone: str) -> tuple:
     """
     Chain-of-thought: Request step-by-step reasoning before the final output
@@ -458,6 +482,7 @@ Strengths: Higher accuracy on complex tasks, transparent reasoning, catches logi
 Limitations: Much longer responses (higher cost/latency), verbose output"""
 
     return system_prompt, user_prompt, explanation
+
 
 def build_role_based_prompt(use_case: str, context: str, tone: str) -> tuple:
     """
@@ -509,6 +534,7 @@ Limitations: May be overly formal, could include unnecessary technical jargon if
 
     return system_prompt, user_prompt, explanation
 
+
 def build_structured_output_prompt(use_case: str, context: str, tone: str) -> tuple:
     """
     Structured output: Specify exact format (JSON, Markdown, etc.) with schema
@@ -551,6 +577,7 @@ Limitations: Less natural/conversational output, may feel rigid, requires carefu
 
     return system_prompt, user_prompt, explanation
 
+
 async def generate_with_claude(system_prompt: str, user_prompt: str) -> str:
     """Call Claude API with the engineered prompts"""
     try:
@@ -566,6 +593,7 @@ async def generate_with_claude(system_prompt: str, user_prompt: str) -> str:
     except Exception as e:
         logger.error(f"Claude API error: {e}")
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
+
 
 @app.post("/api/prompt-engineering", response_model=PromptResponse)
 async def prompt_engineering_demo(request: PromptRequest):
@@ -618,6 +646,7 @@ async def prompt_engineering_demo(request: PromptRequest):
 # CONTACT FORM
 # ============================================================================
 
+
 @app.post("/api/contact", response_model=ContactResponse)
 async def submit_contact_form(request: ContactRequest):
     """
@@ -656,6 +685,7 @@ async def submit_contact_form(request: ContactRequest):
 # DEMO 5: RESTAURANT REVIEW ANALYZER
 # ============================================================================
 
+
 @app.post("/api/analyze-restaurant", response_model=RestaurantResponse)
 async def analyze_restaurant(request: RestaurantRequest):
     """
@@ -671,7 +701,8 @@ async def analyze_restaurant(request: RestaurantRequest):
         if not data_path.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Restaurant '{request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood"
+                detail=f"Restaurant '{
+                    request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood"
             )
 
         with open(data_path, "r") as f:
@@ -767,6 +798,7 @@ Provide your analysis in the JSON format specified."""
 # UTILITY ENDPOINTS
 # ============================================================================
 
+
 @app.get("/")
 def root():
     """API information and available endpoints"""
@@ -787,6 +819,7 @@ def root():
         "github": "https://github.com/guitargnarr"
     }
 
+
 @app.get("/health")
 def health_check():
     """Health check endpoint with restaurant analyzer and contact form support"""
@@ -801,6 +834,7 @@ def health_check():
 # ============================================================================
 # RUN
 # ============================================================================
+
 
 if __name__ == "__main__":
     import uvicorn
