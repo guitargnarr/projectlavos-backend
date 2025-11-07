@@ -1,0 +1,127 @@
+{
+  "restaurant": "Milkwood",
+  "location": "Louisville, KY",
+  "cuisine": "Modern American",
+  "reviews": [
+    {
+      "rating": 5,
+      "text": "Phenomenal brunch! The ricotta pancakes are fluffy and delicious. Coffee is excellent. Cozy neighborhood vibe. Service is warm and friendly.",
+      "date": "2024-10-14",
+      "author": "Lauren S."
+    },
+    {
+      "rating": 4,
+      "text": "Great little spot in Clifton. The burger is juicy and flavorful. Outdoor seating is nice in good weather. Can have a wait on weekends.",
+      "date": "2024-10-10",
+      "author": "Eric M."
+    },
+    {
+      "rating": 5,
+      "text": "This place is a treasure. Creative menu, everything is made from scratch. The seasonal vegetable sides are as good as the mains. Love it here.",
+      "date": "2024-10-06",
+      "author": "Jessica H."
+    },
+    {
+      "rating": 3,
+      "text": "Food was good but portions were small for the price. Service was a bit slow. Nice atmosphere though. Might try again.",
+      "date": "2024-10-02",
+      "author": "George R."
+    },
+    {
+      "rating": 5,
+      "text": "My favorite brunch spot in Louisville. The biscuits and gravy are incredible. Menu changes regularly so there's always something new to try.",
+      "date": "2024-09-28",
+      "author": "Natalie P."
+    },
+    {
+      "rating": 4,
+      "text": "Solid neighborhood restaurant with thoughtful food. The roasted chicken is perfectly cooked. Wine list is small but well-curated.",
+      "date": "2024-09-25",
+      "author": "Timothy J."
+    },
+    {
+      "rating": 5,
+      "text": "Everything here is delicious. The avocado toast is elevated with perfect poached eggs. Staff is knowledgeable and attentive. A gem in Clifton.",
+      "date": "2024-09-20",
+      "author": "Michelle K."
+    },
+    {
+      "rating": 2,
+      "text": "Disappointed. Long wait despite reservation. Food was fine but nothing special. Seemed overhyped to me.",
+      "date": "2024-09-16",
+      "author": "Richard W."
+    },
+    {
+      "rating": 5,
+      "text": "Love this place! Walked here from home. The fried brussels sprouts are addictive. Great for a casual date night or weekend brunch.",
+      "date": "2024-09-12",
+      "author": "Alex F."
+    },
+    {
+      "rating": 4,
+      "text": "Very good food with fresh, local ingredients. The pork chop was tender and flavorful. Space is small so reservations recommended.",
+      "date": "2024-09-08",
+      "author": "Diana L."
+    },
+    {
+      "rating": 5,
+      "text": "Consistently excellent. The menu is small but everything is executed perfectly. The staff clearly cares about the food and the experience.",
+      "date": "2024-09-05",
+      "author": "Benjamin G."
+    },
+    {
+      "rating": 4,
+      "text": "Great neighborhood spot. Brunch is fantastic - the eggs benedict variations are all good. Coffee is strong and well-prepared.",
+      "date": "2024-09-01",
+      "author": "Caroline V."
+    },
+    {
+      "rating": 3,
+      "text": "Nice place but didn't wow me. Food was well-prepared but nothing stood out. Service was friendly. Good but not great.",
+      "date": "2024-08-28",
+      "author": "Steven C."
+    },
+    {
+      "rating": 5,
+      "text": "This is what a neighborhood restaurant should be. Welcoming, delicious, unpretentious. The seasonal menu keeps things interesting.",
+      "date": "2024-08-25",
+      "author": "Rebecca N."
+    },
+    {
+      "rating": 4,
+      "text": "Really good brunch. The french toast is decadent. Mimosas are generous. Small space fills up quickly so arrive early or make a reservation.",
+      "date": "2024-08-20",
+      "author": "Patrick D."
+    },
+    {
+      "rating": 5,
+      "text": "Love everything about Milkwood. The food is creative without being pretentious. Staff treats you like a regular even on your first visit.",
+      "date": "2024-08-16",
+      "author": "Emily T."
+    },
+    {
+      "rating": 4,
+      "text": "Solid spot for brunch or casual dinner. The salads are fresh and interesting. Cocktails are well-made. A reliable neighborhood option.",
+      "date": "2024-08-12",
+      "author": "James B."
+    },
+    {
+      "rating": 5,
+      "text": "Outstanding food and service. The attention to detail is impressive. Farm-to-table done right without being preachy about it.",
+      "date": "2024-08-08",
+      "author": "Kimberly W."
+    },
+    {
+      "rating": 3,
+      "text": "Decent brunch spot. Nothing exceptional but fine for the neighborhood. Prices are a bit high for what you get.",
+      "date": "2024-08-05",
+      "author": "Thomas M."
+    },
+    {
+      "rating": 5,
+      "text": "Our go-to spot for weekend brunch. The staff is wonderful, the food is consistently delicious. Feels like the neighborhood living room.",
+      "date": "2024-08-01",
+      "author": "Sarah and David R."
+    }
+  ]
+}

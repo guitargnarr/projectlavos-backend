@@ -1,0 +1,127 @@
+{
+  "restaurant": "Bourbon Raw",
+  "location": "Louisville, KY",
+  "cuisine": "Seafood & Sushi",
+  "reviews": [
+    {
+      "rating": 5,
+      "text": "Best sushi in Louisville! The fish is incredibly fresh. Happy hour specials are a great value. The atmosphere is trendy and upbeat.",
+      "date": "2024-10-13",
+      "author": "Stephanie K."
+    },
+    {
+      "rating": 4,
+      "text": "Really good seafood for being landlocked. The oysters were fresh and the selection was impressive. Service was attentive. Prices are fair.",
+      "date": "2024-10-09",
+      "author": "Marcus W."
+    },
+    {
+      "rating": 5,
+      "text": "The spicy tuna roll is perfection. Great cocktails and the bourbon selection lives up to the name. Always a fun night out here.",
+      "date": "2024-10-05",
+      "author": "Nicole R."
+    },
+    {
+      "rating": 3,
+      "text": "Good but not great. Sushi was fine, nothing exceptional. Music was way too loud. Had trouble hearing our conversation.",
+      "date": "2024-10-01",
+      "author": "Patricia M."
+    },
+    {
+      "rating": 5,
+      "text": "Love this place! The poke bowl is my go-to. Fresh ingredients, great portions, reasonable prices. The vibe is casual and fun.",
+      "date": "2024-09-27",
+      "author": "Brandon H."
+    },
+    {
+      "rating": 4,
+      "text": "Solid sushi spot. The chef's special rolls are creative and delicious. Happy hour is packed so arrive early. Service can be slow when busy.",
+      "date": "2024-09-24",
+      "author": "Elizabeth P."
+    },
+    {
+      "rating": 5,
+      "text": "Fantastic seafood tower! Perfect for sharing. The crab legs were sweet and meaty. Great for a special occasion. Will definitely return.",
+      "date": "2024-09-20",
+      "author": "Andrew D."
+    },
+    {
+      "rating": 2,
+      "text": "Overpriced and underwhelming. Sushi rolls fell apart. Service was inattentive. Expected much more based on the reputation.",
+      "date": "2024-09-16",
+      "author": "Carol J."
+    },
+    {
+      "rating": 5,
+      "text": "Best place for sushi and drinks in the Highlands. The rainbow roll is beautiful and delicious. Staff is knowledgeable about the fish.",
+      "date": "2024-09-12",
+      "author": "Derek F."
+    },
+    {
+      "rating": 4,
+      "text": "Good sushi with a fun atmosphere. The edamame is perfectly seasoned. Sake selection is extensive. Can get crowded and noisy on weekends.",
+      "date": "2024-09-08",
+      "author": "Melissa G."
+    },
+    {
+      "rating": 5,
+      "text": "Outstanding from start to finish. The tuna tartare is fresh and flavorful. Bourbon cocktails are expertly crafted. A Louisville gem.",
+      "date": "2024-09-05",
+      "author": "Jonathan C."
+    },
+    {
+      "rating": 4,
+      "text": "Very good sushi for the Midwest. The spicy salmon roll has the perfect amount of heat. Prices are reasonable for the quality.",
+      "date": "2024-09-01",
+      "author": "Karen L."
+    },
+    {
+      "rating": 3,
+      "text": "Decent sushi but nothing special. The atmosphere is nice but the noise level is too high. Service was friendly but forgetful.",
+      "date": "2024-08-28",
+      "author": "Ronald T."
+    },
+    {
+      "rating": 5,
+      "text": "My favorite sushi spot in town. The fish is always fresh, the rice is perfectly seasoned. The bartenders make excellent cocktails.",
+      "date": "2024-08-25",
+      "author": "Tiffany B."
+    },
+    {
+      "rating": 4,
+      "text": "Great happy hour deals. The volcano roll is delicious and huge. Service is usually quick. Good for a casual dinner or drinks with friends.",
+      "date": "2024-08-20",
+      "author": "Christopher N."
+    },
+    {
+      "rating": 5,
+      "text": "Consistently excellent sushi and service. The presentation is beautiful. Love the trendy but welcoming atmosphere. Highly recommend.",
+      "date": "2024-08-16",
+      "author": "Vanessa S."
+    },
+    {
+      "rating": 4,
+      "text": "Good food and fun vibe. The seaweed salad is fresh and tangy. Bar area can get crowded. Make a reservation for dinner.",
+      "date": "2024-08-12",
+      "author": "Matthew V."
+    },
+    {
+      "rating": 5,
+      "text": "The best seafood restaurant in Louisville. Everything we tried was excellent. The staff is friendly and the space is beautifully designed.",
+      "date": "2024-08-08",
+      "author": "Samantha D."
+    },
+    {
+      "rating": 3,
+      "text": "Fine for what it is. Sushi was okay, nothing memorable. Drinks were good. Probably wouldn't make a special trip but fine for the neighborhood.",
+      "date": "2024-08-05",
+      "author": "Daniel M."
+    },
+    {
+      "rating": 5,
+      "text": "Amazing food, great service, fun atmosphere. The lobster roll is decadent. Bourbon flights are a must-try. One of our favorites in Louisville.",
+      "date": "2024-08-01",
+      "author": "Ashley and Ryan K."
+    }
+  ]
+}

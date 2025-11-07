@@ -1,0 +1,127 @@
+{
+  "restaurant": "Jack Fry's",
+  "location": "Louisville, KY",
+  "cuisine": "Upscale Southern",
+  "reviews": [
+    {
+      "rating": 5,
+      "text": "Absolutely amazing hot brown! Best I've ever had. The service was attentive without being overbearing. The atmosphere is classic Louisville - intimate, sophisticated, and warm. Will definitely return.",
+      "date": "2024-10-15",
+      "author": "Sarah M."
+    },
+    {
+      "rating": 4,
+      "text": "Food was excellent, but we waited 45 minutes for a table despite having a reservation. Once seated, everything was perfect. The bourbon selection is outstanding.",
+      "date": "2024-10-10",
+      "author": "John D."
+    },
+    {
+      "rating": 5,
+      "text": "This place never disappoints. Been coming for years and the quality is always consistent. The shrimp and grits are phenomenal. Staff remembers regular customers.",
+      "date": "2024-10-08",
+      "author": "Michael R."
+    },
+    {
+      "rating": 3,
+      "text": "Overpriced for what you get. Food was good but not exceptional. Service was slow on a busy Saturday night. Expected more given the reputation.",
+      "date": "2024-10-05",
+      "author": "Jennifer L."
+    },
+    {
+      "rating": 5,
+      "text": "Perfect for a special occasion. The jazz music adds to the ambiance. Had the duck breast and it was cooked to perfection. Wine list is impressive.",
+      "date": "2024-09-30",
+      "author": "David K."
+    },
+    {
+      "rating": 4,
+      "text": "Great food and atmosphere but parking can be challenging. The fried chicken is crispy and flavorful. Cocktails are well-crafted. A Louisville institution.",
+      "date": "2024-09-28",
+      "author": "Lisa P."
+    },
+    {
+      "rating": 5,
+      "text": "Took clients here for dinner and they were blown away. Professional service, excellent food, and the historic building adds character. Highly recommend.",
+      "date": "2024-09-25",
+      "author": "Robert T."
+    },
+    {
+      "rating": 2,
+      "text": "Disappointing experience. Entree came out cold and we had to send it back. Manager comped the dish but the damage was done. Not sure I'll return.",
+      "date": "2024-09-20",
+      "author": "Amanda S."
+    },
+    {
+      "rating": 5,
+      "text": "The best restaurant in Louisville, hands down. Every dish is thoughtfully prepared. The Derby pie dessert is a must-try. Service is impeccable.",
+      "date": "2024-09-18",
+      "author": "Charles W."
+    },
+    {
+      "rating": 4,
+      "text": "Solid upscale dining experience. The menu changes seasonally which keeps things interesting. Portions are generous. Can get loud when crowded.",
+      "date": "2024-09-15",
+      "author": "Emily B."
+    },
+    {
+      "rating": 5,
+      "text": "Celebrated our anniversary here and it was magical. The staff went above and beyond with a complimentary dessert and handwritten note. Food was outstanding.",
+      "date": "2024-09-10",
+      "author": "Mark and Jessica H."
+    },
+    {
+      "rating": 4,
+      "text": "Great atmosphere with live jazz on weekends. The catfish was perfectly seasoned. Service could be a bit faster but overall a very good experience.",
+      "date": "2024-09-08",
+      "author": "Thomas G."
+    },
+    {
+      "rating": 3,
+      "text": "Nice place but felt rushed. They seemed to want to turn the table quickly. Food was good but not worth the premium prices in my opinion.",
+      "date": "2024-09-05",
+      "author": "Nicole F."
+    },
+    {
+      "rating": 5,
+      "text": "Everything about this place is top-notch. From the moment you walk in, you feel welcomed. The seafood gumbo is incredible. Best restaurant in the Highlands.",
+      "date": "2024-09-01",
+      "author": "William C."
+    },
+    {
+      "rating": 4,
+      "text": "Very good food and service. The ribeye was cooked exactly as ordered. Noise level is high during peak hours. Make a reservation well in advance.",
+      "date": "2024-08-28",
+      "author": "Patricia M."
+    },
+    {
+      "rating": 5,
+      "text": "An absolute gem. The chef clearly takes pride in every dish. Had the quail and it was phenomenal. The bourbon butter sauce is divine.",
+      "date": "2024-08-25",
+      "author": "Gregory N."
+    },
+    {
+      "rating": 4,
+      "text": "Excellent food and historic charm. The only downside is limited parking. Try the pork chop - it's huge and delicious. Service was friendly and knowledgeable.",
+      "date": "2024-08-20",
+      "author": "Samantha V."
+    },
+    {
+      "rating": 5,
+      "text": "If you're visiting Louisville, you MUST eat here. Authentic Southern cuisine done right. The fried green tomatoes are a perfect starter.",
+      "date": "2024-08-18",
+      "author": "Kevin O."
+    },
+    {
+      "rating": 3,
+      "text": "Good but not great. Expected more based on reviews. Entree was underseasoned. Dessert saved the meal. Might give it another try.",
+      "date": "2024-08-15",
+      "author": "Rachel D."
+    },
+    {
+      "rating": 5,
+      "text": "Consistently excellent. Been a regular for over a decade. The menu evolves but the quality never wavers. Staff treats you like family.",
+      "date": "2024-08-10",
+      "author": "James and Carol B."
+    }
+  ]
+}

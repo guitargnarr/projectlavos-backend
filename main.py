@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
 import os
+import json
+from pathlib import Path
 from anthropic import Anthropic
 
 # Configure logging
@@ -97,6 +99,25 @@ class ContactRequest(BaseModel):
 class ContactResponse(BaseModel):
     success: bool
     message: str
+
+class RestaurantRequest(BaseModel):
+    restaurant_name: str = Field(..., min_length=1, max_length=200, description="Restaurant name to analyze")
+    location: Optional[str] = Field("Louisville, KY", max_length=100)
+
+class Theme(BaseModel):
+    theme: str
+    mentions: int
+    sentiment: str  # positive, negative, mixed
+
+class RestaurantResponse(BaseModel):
+    restaurant: str
+    location: str
+    overall_sentiment: float  # 0-5
+    total_reviews_analyzed: int
+    themes: List[Theme]
+    sample_positive: str
+    sample_negative: str
+    recommendations: List[str]
 
 # ============================================================================
 # DEMO 1: SENTIMENT ANALYSIS
@@ -632,6 +653,117 @@ async def submit_contact_form(request: ContactRequest):
         )
 
 # ============================================================================
+# DEMO 5: RESTAURANT REVIEW ANALYZER
+# ============================================================================
+
+@app.post("/api/analyze-restaurant", response_model=RestaurantResponse)
+async def analyze_restaurant(request: RestaurantRequest):
+    """
+    Analyze restaurant reviews to extract sentiment, themes, and recommendations.
+    Uses static Louisville restaurant data with Claude API for analysis.
+    """
+    try:
+        # Normalize restaurant name for file lookup
+        restaurant_slug = request.restaurant_name.lower().replace(" ", "-").replace("'", "")
+        data_path = Path(__file__).parent / "data" / "restaurants" / f"{restaurant_slug}.json"
+
+        # Load restaurant data
+        if not data_path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Restaurant '{request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood"
+            )
+
+        with open(data_path, "r") as f:
+            restaurant_data = json.load(f)
+
+        reviews = restaurant_data["reviews"]
+
+        # Prepare reviews text for Claude analysis
+        reviews_text = "\n\n".join([
+            f"Rating: {r['rating']}/5\nReview: {r['text']}"
+            for r in reviews[:20]  # Analyze first 20 reviews to stay within token limits
+        ])
+
+        # Build Claude prompt for analysis
+        system_prompt = """You are an expert restaurant consultant analyzing customer reviews.
+Your task is to:
+1. Identify the overall sentiment (average rating 0-5)
+2. Extract 3-5 key themes mentioned frequently (e.g., atmosphere, service, food quality, wait times, pricing)
+3. For each theme, count how many times it's mentioned and whether sentiment is positive, negative, or mixed
+4. Find one representative positive review excerpt (1-2 sentences)
+5. Find one representative negative review excerpt (1-2 sentences)
+6. Provide 3-4 actionable recommendations for the restaurant owner
+
+Return your analysis in this exact JSON format:
+{
+  "overall_sentiment": 4.2,
+  "themes": [
+    {"theme": "Atmosphere", "mentions": 15, "sentiment": "positive"},
+    {"theme": "Service", "mentions": 12, "sentiment": "positive"},
+    {"theme": "Wait times", "mentions": 8, "sentiment": "negative"}
+  ],
+  "sample_positive": "One sentence positive review excerpt",
+  "sample_negative": "One sentence negative review excerpt",
+  "recommendations": [
+    "Specific actionable recommendation 1",
+    "Specific actionable recommendation 2",
+    "Specific actionable recommendation 3"
+  ]
+}"""
+
+        user_prompt = f"""Analyze these reviews for {restaurant_data['restaurant']} ({restaurant_data['cuisine']} cuisine) in {restaurant_data['location']}:
+
+{reviews_text}
+
+Provide your analysis in the JSON format specified."""
+
+        # Get analysis from Claude
+        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        message = client.messages.create(
+            model="claude-haiku-4-20250514",
+            max_tokens=2000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+
+        # Parse Claude's JSON response
+        analysis_text = message.content[0].text
+
+        # Extract JSON from response (handle markdown code blocks if present)
+        if "```json" in analysis_text:
+            json_start = analysis_text.find("```json") + 7
+            json_end = analysis_text.find("```", json_start)
+            analysis_text = analysis_text[json_start:json_end].strip()
+        elif "```" in analysis_text:
+            json_start = analysis_text.find("```") + 3
+            json_end = analysis_text.find("```", json_start)
+            analysis_text = analysis_text[json_start:json_end].strip()
+
+        analysis = json.loads(analysis_text)
+
+        # Build response
+        return RestaurantResponse(
+            restaurant=restaurant_data["restaurant"],
+            location=restaurant_data["location"],
+            overall_sentiment=analysis["overall_sentiment"],
+            total_reviews_analyzed=len(reviews),
+            themes=[Theme(**theme) for theme in analysis["themes"]],
+            sample_positive=analysis["sample_positive"],
+            sample_negative=analysis["sample_negative"],
+            recommendations=analysis["recommendations"]
+        )
+
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Claude response: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse analysis results")
+    except Exception as e:
+        logger.error(f"Restaurant analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+# ============================================================================
 # UTILITY ENDPOINTS
 # ============================================================================
 
@@ -646,7 +778,8 @@ def root():
             "sentiment": "/api/sentiment - Analyze text sentiment",
             "leads": "/api/leads - Score sales leads",
             "phishing": "/api/phishing - Detect phishing emails",
-            "prompt-engineering": "/api/prompt-engineering - Advanced LLM prompt techniques"
+            "prompt-engineering": "/api/prompt-engineering - Advanced LLM prompt techniques",
+            "restaurant-analyzer": "/api/analyze-restaurant - Analyze Louisville restaurant reviews"
         },
         "contact": "/api/contact - Submit contact form",
         "website": "https://projectlavos.com",
@@ -656,12 +789,13 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint with contact form support"""
+    """Health check endpoint with restaurant analyzer and contact form support"""
     return {
         "status": "healthy",
-        "demos_available": 4,
-        "version": "1.2.0",
-        "contact_form": "enabled"
+        "demos_available": 5,
+        "version": "1.3.0",
+        "contact_form": "enabled",
+        "restaurant_analyzer": "enabled"
     }
 
 # ============================================================================
