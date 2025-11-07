@@ -753,7 +753,7 @@ Provide your analysis in the JSON format specified."""
         # Get analysis from Claude
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         message = client.messages.create(
-            model="claude-haiku-4-20250514",
+            model="claude-3-5-haiku-20241022",  # Fast, cost-efficient for demos
             max_tokens=2000,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}]
