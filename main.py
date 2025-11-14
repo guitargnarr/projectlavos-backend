@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 from anthropic import Anthropic
 from cache_client import get_cache
+from email_service import get_email_service, EmailServiceError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -149,6 +150,28 @@ class EmailScorerResponse(BaseModel):
     improvements: List[str]  # Specific suggestions for improvement
     revised_subject: Optional[str]  # Improved subject line suggestion
     key_metrics: Dict[str, int]  # {"clarity": 8, "persuasion": 6, "call_to_action": 7}
+
+
+class NotificationRequest(BaseModel):
+    notification_type: str = Field(..., description="Type: contact_form, alert, custom")
+    subject: Optional[str] = Field(None, description="Email subject (for custom type)")
+    title: Optional[str] = Field(None, description="Notification title (for custom type)")
+    body: Optional[str] = Field(None, description="HTML body (for custom type)")
+    alert_type: Optional[str] = Field(None, description="Alert type (for alert type)")
+    message: Optional[str] = Field(None, description="Alert message (for alert type)")
+    severity: Optional[str] = Field("info", description="Alert severity: info, warning, error, success")
+    recipients: Optional[List[str]] = Field(None, description="Override default recipients")
+    # Contact form fields
+    name: Optional[str] = Field(None, description="Contact name (for contact_form type)")
+    email: Optional[str] = Field(None, description="Contact email (for contact_form type)")
+    business_type: Optional[str] = Field(None, description="Business type (for contact_form type)")
+    challenge: Optional[str] = Field(None, description="Challenge description (for contact_form type)")
+
+
+class NotificationResponse(BaseModel):
+    success: bool
+    message: str
+    details: Optional[Dict] = None
 
 # ============================================================================
 # DEMO 1: SENTIMENT ANALYSIS
@@ -443,11 +466,14 @@ Requirements:
 
     explanation = """**Zero-Shot Prompting**
 
-What it is: Direct instruction without examples. The model uses its training to understand the task.
+What it is: Direct instruction without examples. The model uses its training to
+understand the task.
 
-Why it works: Modern LLMs are trained on vast amounts of text and can generalize well to new tasks without explicit examples.
+Why it works: Modern LLMs are trained on vast amounts of text and can
+generalize well to new tasks without explicit examples.
 
-When to use: Simple, well-defined tasks where the model's general knowledge is sufficient. Fastest and most token-efficient approach.
+When to use: Simple, well-defined tasks where the model's general knowledge is
+sufficient. Fastest and most token-efficient approach.
 
 Strengths: Fast, token-efficient, works for most common tasks
 Limitations: May struggle with highly specific formats or uncommon tasks"""
@@ -461,15 +487,38 @@ def build_few_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
     Best for: Specific formats, style consistency, pattern replication
     """
     # Define examples based on use case
+    email_ex1 = (
+        "Subject: Rescheduling Our Meeting - New Time Proposed\n\n"
+        "Hi [Name],\n\nI hope this email finds you well. Unfortunately, "
+        "I need to reschedule our meeting originally planned for "
+        "[date/time]. Would [new date/time] work for your schedule?\n\n"
+        "I apologize for any inconvenience and look forward to "
+        "connecting soon.\n\nBest regards,\n[Your name]"
+    )
+    email_ex2 = (
+        "Subject: Weekly Project Update - On Track\n\nHi Team,\n\n"
+        "Quick update on Project X: We've completed Phase 1 (design) and "
+        "are moving into Phase 2 (development) as planned. "
+        "Timeline remains on schedule for Q2 delivery.\n\n"
+        "Next steps: Engineering kick-off meeting this Thursday.\n\n"
+        "Let me know if you have questions.\n\nBest,\n[Your name]"
+    )
+    blog_ex1 = (
+        "# The AI Revolution in Healthcare: What Doctors and Patients "
+        "Need to Know\n\nArtificial intelligence is transforming healthcare "
+        "at an unprecedented pace. From diagnostic imaging to treatment "
+        "planning, AI systems are augmenting—not replacing—the expertise "
+        "of medical professionals.\n\nHere's what you need to know about "
+        "this revolution..."
+    )
+
     examples = {
         "email": [
-            {"input": "Meeting reschedule",
-             "output": "Subject: Rescheduling Our Meeting - New Time Proposed\n\nHi [Name],\n\nI hope this email finds you well. Unfortunately, I need to reschedule our meeting originally planned for [date/time]. Would [new date/time] work for your schedule?\n\nI apologize for any inconvenience and look forward to connecting soon.\n\nBest regards,\n[Your name]"},
-            {"input": "Project update",
-             "output": "Subject: Weekly Project Update - On Track\n\nHi Team,\n\nQuick update on Project X: We've completed Phase 1 (design) and are moving into Phase 2 (development) as planned. Timeline remains on schedule for Q2 delivery.\n\nNext steps: Engineering kick-off meeting this Thursday.\n\nLet me know if you have questions.\n\nBest,\n[Your name]"}
+            {"input": "Meeting reschedule", "output": email_ex1},
+            {"input": "Project update", "output": email_ex2}
         ],
         "blog": [
-            {"input": "AI in healthcare", "output": "# The AI Revolution in Healthcare: What Doctors and Patients Need to Know\n\nArtificial intelligence is transforming healthcare at an unprecedented pace. From diagnostic imaging to treatment planning, AI systems are augmenting—not replacing—the expertise of medical professionals.\n\nHere's what you need to know about this revolution..."},
+            {"input": "AI in healthcare", "output": blog_ex1},
         ]
     }
 
@@ -478,10 +527,14 @@ def build_few_shot_prompt(use_case: str, context: str, tone: str) -> tuple:
         for i, ex in enumerate(examples[use_case.lower()][:2], 1):
             example_text += f"\nExample {i}:\nContext: {ex['input']}\nOutput:\n{ex['output']}\n"
 
-    system_prompt = f"You are an expert {use_case} writer. Follow the style and format shown in the examples below."
+    fallback_text = f'Follow professional standards for {use_case} writing.'
+    system_prompt = (
+        f"You are an expert {use_case} writer. Follow the style and format "
+        "shown in the examples below."
+    )
 
     user_prompt = f"""You will write content following the patterns shown in these examples:
-{example_text if example_text else 'Follow professional standards for ' + use_case + ' writing.'}
+{example_text if example_text else fallback_text}
 
 Now write a {use_case} with these specifications:
 Context: {context}
@@ -491,13 +544,17 @@ Match the format and style from the examples above."""
 
     explanation = """**Few-Shot Prompting**
 
-What it is: Provide 2-5 examples of the desired output format before the actual request. The model learns the pattern from examples.
+What it is: Provide 2-5 examples of the desired output format before the
+actual request. The model learns the pattern from examples.
 
-Why it works: LLMs excel at pattern recognition. Concrete examples clarify expectations better than abstract instructions.
+Why it works: LLMs excel at pattern recognition. Concrete examples clarify
+expectations better than abstract instructions.
 
-When to use: When you need specific formatting, consistent style across outputs, or the task is unusual/specialized.
+When to use: When you need specific formatting, consistent style across
+outputs, or the task is unusual/specialized.
 
-Strengths: Better accuracy for specific formats, style consistency, handles edge cases
+Strengths: Better accuracy for specific formats, style consistency, handles
+edge cases
 Limitations: Uses more tokens (costs more), examples must be high-quality"""
 
     return system_prompt, user_prompt, explanation
@@ -508,9 +565,13 @@ def build_chain_of_thought_prompt(use_case: str, context: str, tone: str) -> tup
     Chain-of-thought: Request step-by-step reasoning before the final output
     Best for: Complex tasks, ensuring quality, transparent decision-making
     """
-    system_prompt = f"You are an expert {use_case} writer who thinks carefully through each aspect before writing."
+    system_prompt = (
+        f"You are an expert {use_case} writer who thinks carefully through "
+        "each aspect before writing."
+    )
 
-    user_prompt = f"""I need you to write a {use_case}. Before writing the final version, please think through this step-by-step:
+    user_prompt = f"""I need you to write a {use_case}. Before writing the
+final version, please think through this step-by-step:
 
 Context: {context}
 Tone: {tone}
@@ -522,17 +583,23 @@ Please follow this thought process:
 4. Choose the most effective structure
 5. Write the final version
 
-Show your reasoning for steps 1-4, then provide the final polished {use_case}."""
+Show your reasoning for steps 1-4, then provide the final polished
+{use_case}."""
 
     explanation = """**Chain-of-Thought Prompting**
 
-What it is: Ask the model to "think out loud" and show its reasoning process before generating the final output.
+What it is: Ask the model to "think out loud" and show its reasoning process
+before generating the final output.
 
-Why it works: Breaking complex tasks into steps improves accuracy. The model's intermediate reasoning helps it avoid errors and produce better final outputs.
+Why it works: Breaking complex tasks into steps improves accuracy. The
+model's intermediate reasoning helps it avoid errors and produce better final
+outputs.
 
-When to use: Complex tasks requiring planning, quality-critical outputs, when you want to verify the reasoning behind the output.
+When to use: Complex tasks requiring planning, quality-critical outputs, when
+you want to verify the reasoning behind the output.
 
-Strengths: Higher accuracy on complex tasks, transparent reasoning, catches logical errors
+Strengths: Higher accuracy on complex tasks, transparent reasoning, catches
+logical errors
 Limitations: Much longer responses (higher cost/latency), verbose output"""
 
     return system_prompt, user_prompt, explanation
@@ -544,9 +611,18 @@ def build_role_based_prompt(use_case: str, context: str, tone: str) -> tuple:
     Best for: Specialized content, authoritative voice, technical accuracy
     """
     roles = {
-        "email": "senior business communications expert with 15 years of experience in professional correspondence",
-        "blog": "professional content strategist and storyteller who creates engaging, SEO-optimized articles",
-        "summary": "executive briefing specialist who distills complex information into clear, actionable insights",
+        "email": (
+            "senior business communications expert with 15 years of "
+            "experience in professional correspondence"
+        ),
+        "blog": (
+            "professional content strategist and storyteller who creates "
+            "engaging, SEO-optimized articles"
+        ),
+        "summary": (
+            "executive briefing specialist who distills complex information "
+            "into clear, actionable insights"
+        ),
         "custom": "versatile professional writer with expertise across multiple domains"
     }
 
@@ -577,14 +653,20 @@ Deliver a polished, professional result."""
 
     explanation = """**Role-Based Prompting**
 
-What it is: Assign the model a specific expert role/persona with defined expertise, perspective, and professional standards.
+What it is: Assign the model a specific expert role/persona with defined
+expertise, perspective, and professional standards.
 
-Why it works: Activating a "role" in the model's training data helps it access relevant knowledge and writing styles. The model generates content consistent with that expert's perspective.
+Why it works: Activating a "role" in the model's training data helps it access
+relevant knowledge and writing styles. The model generates content consistent
+with that expert's perspective.
 
-When to use: Specialized or technical content, when you need authoritative voice, industry-specific terminology, professional standards.
+When to use: Specialized or technical content, when you need authoritative
+voice, industry-specific terminology, professional standards.
 
-Strengths: Access to specialized knowledge, appropriate professional tone, industry-standard formats
-Limitations: May be overly formal, could include unnecessary technical jargon if not balanced"""
+Strengths: Access to specialized knowledge, appropriate professional tone,
+industry-standard formats
+Limitations: May be overly formal, could include unnecessary technical jargon
+if not balanced"""
 
     return system_prompt, user_prompt, explanation
 
@@ -594,7 +676,10 @@ def build_structured_output_prompt(use_case: str, context: str, tone: str) -> tu
     Structured output: Specify exact format (JSON, Markdown, etc.) with schema
     Best for: Programmatic use, consistent parsing, integration with other systems
     """
-    system_prompt = f"You are a {use_case} writing assistant that produces well-structured, formatted content."
+    system_prompt = (
+        f"You are a {use_case} writing assistant that produces "
+        "well-structured, formatted content."
+    )
 
     user_prompt = f"""Create a {use_case} with the following requirements:
 
@@ -620,14 +705,19 @@ Ensure each section is clearly marked and formatted consistently."""
 
     explanation = """**Structured Output Prompting**
 
-What it is: Specify exact output format with clear schema, sections, or data structure (JSON, Markdown, XML, etc.).
+What it is: Specify exact output format with clear schema, sections, or data
+structure (JSON, Markdown, XML, etc.).
 
-Why it works: Explicit formatting instructions ensure consistent, parseable outputs. Reduces post-processing and enables programmatic use.
+Why it works: Explicit formatting instructions ensure consistent, parseable
+outputs. Reduces post-processing and enables programmatic use.
 
-When to use: When outputs need to be parsed by other systems, consistency is critical, or you need to extract specific fields reliably.
+When to use: When outputs need to be parsed by other systems, consistency is
+critical, or you need to extract specific fields reliably.
 
-Strengths: Perfect for automation, consistent format, easy to parse programmatically, no post-processing
-Limitations: Less natural/conversational output, may feel rigid, requires careful schema design"""
+Strengths: Perfect for automation, consistent format, easy to parse
+programmatically, no post-processing
+Limitations: Less natural/conversational output, may feel rigid, requires
+careful schema design"""
 
     return system_prompt, user_prompt, explanation
 
@@ -705,7 +795,7 @@ async def prompt_engineering_demo(request: PromptRequest):
 async def submit_contact_form(request: ContactRequest):
     """
     Handle contact form submissions from projectlavos.com
-    Logs inquiries and sends notification email (future: integrate SendGrid/SMTP)
+    Logs inquiries and sends notification email via SendGrid
     """
     try:
         # Log the contact request (visible in Render.com logs)
@@ -720,8 +810,19 @@ async def submit_contact_form(request: ContactRequest):
         ========================================
         """)
 
-        # TODO: Send email notification via SendGrid/SMTP
-        # For now, logging is sufficient - user can check Render logs
+        # Send email notification via SendGrid
+        try:
+            email_service = get_email_service()
+            await email_service.send_contact_form_notification(
+                name=request.name,
+                email=request.email,
+                business_type=request.businessType,
+                challenge=request.challenge
+            )
+            logger.info("Contact form notification email sent successfully")
+        except EmailServiceError as e:
+            # Log but don't fail - contact is still recorded in logs
+            logger.warning(f"Email notification failed: {e}")
 
         return ContactResponse(
             success=True,
@@ -733,6 +834,144 @@ async def submit_contact_form(request: ContactRequest):
         raise HTTPException(
             status_code=500,
             detail="Failed to submit contact form. Please email matthewdscott7@gmail.com directly."
+        )
+
+# ============================================================================
+# EMAIL NOTIFICATIONS
+# ============================================================================
+
+
+@app.post("/api/notify", response_model=NotificationResponse)
+async def send_notification(request: NotificationRequest):
+    """
+    Send email notifications via SendGrid
+
+    Supports three notification types:
+    1. contact_form - Contact form submissions (requires: name, email, business_type, challenge)
+    2. alert - System alerts (requires: alert_type, message, severity)
+    3. custom - Custom notifications (requires: subject, title, body)
+
+    Examples:
+
+    Contact Form:
+    {
+        "notification_type": "contact_form",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "business_type": "Healthcare",
+        "challenge": "Need AI solution for patient triage"
+    }
+
+    Alert:
+    {
+        "notification_type": "alert",
+        "alert_type": "High Lead Score",
+        "message": "Lead scored 95/100 - urgent follow-up required",
+        "severity": "warning"
+    }
+
+    Custom:
+    {
+        "notification_type": "custom",
+        "subject": "Weekly Report",
+        "title": "Platform Usage Summary",
+        "body": "<p>This week's metrics...</p>",
+        "recipients": ["custom@example.com"]
+    }
+    """
+    try:
+        email_service = get_email_service()
+
+        # Route to appropriate notification handler
+        if request.notification_type == "contact_form":
+            # Validate required fields
+            if not all([request.name, request.email, request.business_type, request.challenge]):
+                raise HTTPException(
+                    status_code=400,
+                    detail="contact_form type requires: name, email, business_type, challenge"
+                )
+
+            response = await email_service.send_contact_form_notification(
+                name=request.name,
+                email=request.email,
+                business_type=request.business_type,
+                challenge=request.challenge,
+                recipients=request.recipients
+            )
+
+            return NotificationResponse(
+                success=True,
+                message="Contact form notification sent successfully",
+                details={"status_code": response["status_code"]}
+            )
+
+        elif request.notification_type == "alert":
+            # Validate required fields
+            if not all([request.alert_type, request.message]):
+                raise HTTPException(
+                    status_code=400,
+                    detail="alert type requires: alert_type, message"
+                )
+
+            response = await email_service.send_alert(
+                alert_type=request.alert_type,
+                message=request.message,
+                severity=request.severity or "info",
+                recipients=request.recipients
+            )
+
+            details = {
+                "status_code": response["status_code"],
+                "severity": request.severity
+            }
+            return NotificationResponse(
+                success=True,
+                message="Alert notification sent successfully",
+                details=details
+            )
+
+        elif request.notification_type == "custom":
+            # Validate required fields
+            if not all([request.subject, request.title, request.body]):
+                raise HTTPException(
+                    status_code=400,
+                    detail="custom type requires: subject, title, body"
+                )
+
+            response = await email_service.send_custom_notification(
+                subject=request.subject,
+                title=request.title,
+                body=request.body,
+                recipients=request.recipients
+            )
+
+            return NotificationResponse(
+                success=True,
+                message="Custom notification sent successfully",
+                details={"status_code": response["status_code"]}
+            )
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid notification_type: {request.notification_type}. Use: contact_form, alert, or custom"
+            )
+
+    except EmailServiceError as e:
+        logger.error(f"Email service error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Email notification failed: {str(e)}"
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.error(f"Notification error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send notification: {str(e)}"
         )
 
 # ============================================================================
@@ -753,9 +992,17 @@ async def analyze_restaurant(request: RestaurantRequest):
 
         # Load restaurant data
         if not data_path.exists():
+            available = (
+                "Jack Fry's, Proof on Main, Hammerheads, "
+                "Bourbon Raw, Milkwood"
+            )
             raise HTTPException(
-                status_code=404, detail=f"Restaurant '{
-                    request.restaurant_name}' not found. Available: Jack Fry's, Proof on Main, Hammerheads, Bourbon Raw, Milkwood")
+                status_code=404,
+                detail=(
+                    f"Restaurant '{request.restaurant_name}' not found. "
+                    f"Available: {available}"
+                )
+            )
 
         with open(data_path, "r") as f:
             restaurant_data = json.load(f)
@@ -961,7 +1208,10 @@ def root():
             "restaurant-analyzer": "/api/analyze-restaurant - Analyze Louisville restaurant reviews",
             "email-scorer": "/api/score-email - Score sales email effectiveness"
         },
-        "contact": "/api/contact - Submit contact form",
+        "utilities": {
+            "contact": "/api/contact - Submit contact form",
+            "notify": "/api/notify - Send email notifications (SendGrid)"
+        },
         "website": "https://projectlavos.com",
         "portfolio": "https://jaspermatters.com",
         "github": "https://github.com/guitargnarr"
@@ -971,15 +1221,24 @@ def root():
 @app.get("/health")
 def health_check():
     """Health check endpoint with all demos and features"""
+    # Check if email service is configured
+    email_service = get_email_service()
+    email_configured = email_service.client is not None
+    email_status = "enabled" if email_configured else "disabled (no API key)"
+
     return {
         "status": "healthy",
         "demos_available": 6,
-        "version": "1.4.0",
-        "contact_form": "enabled",
-        "restaurant_analyzer": "enabled",
-        "email_scorer": "enabled",
+        "version": "1.5.0",
+        "features": {
+            "contact_form": "enabled",
+            "restaurant_analyzer": "enabled",
+            "email_scorer": "enabled",
+            "email_notifications": email_status
+        },
         "cache": cache.get_stats()
     }
+
 
 @app.get("/api/cache/stats")
 def cache_statistics():
