@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Redis Cache Layer (Shared across all services)
+  redis:
+    image: redis:7-alpine
+    container_name: lavos-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - lavos-network
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # C++ High-Performance Text Processor
+  cpp-processor:
+    build:
+      context: ./cpp-processor
+      dockerfile: Dockerfile
+    container_name: lavos-cpp-processor
+    ports:
+      - "9000:9000"
+    networks:
+      - lavos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # FastAPI Backend (Claude AI Demos)
+  fastapi-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: lavos-fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - lavos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Python ML Ensemble Service (PhishGuard)
+  python-ml:
+    build:
+      context: ./python-ml
+      dockerfile: Dockerfile
+    container_name: lavos-ml-ensemble
+    ports:
+      - "9001:9001"
+    volumes:
+      - ../Security-Tools/security-phishing-detector/models:/app/models:ro
+    networks:
+      - lavos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Spring Boot Gateway (Orchestration Layer)
+  springboot-gateway:
+    build:
+      context: ./springboot-gateway
+      dockerfile: Dockerfile
+    container_name: lavos-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - CPP_PROCESSOR_URL=http://cpp-processor:9000
+      - FASTAPI_URL=http://fastapi-backend:8000
+      - REDIS_URL=redis://redis:6379
+      - ML_ENSEMBLE_URL=http://python-ml:9001
+    depends_on:
+      redis:
+        condition: service_healthy
+      cpp-processor:
+        condition: service_healthy
+      fastapi-backend:
+        condition: service_healthy
+      python-ml:
+        condition: service_healthy
+    networks:
+      - lavos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  lavos-network:
+    driver: bridge
+
+volumes:
+  redis-data:

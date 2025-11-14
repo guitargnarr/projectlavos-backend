@@ -1,11 +1,25 @@
+# Build artifacts
+cpp-processor/build/
+springboot-gateway/target/
+*.class
+*.o
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-env/
+.pytest_cache/
+
+# Environment
 .env
-.venv
 *.log
-.DS_Store
+
+# Redis
+dump.rdb

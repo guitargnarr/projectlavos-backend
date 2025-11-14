@@ -17,10 +17,14 @@ import os
 import json
 from pathlib import Path
 from anthropic import Anthropic
+from cache_client import get_cache
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize cache
+cache = get_cache()
 
 # Initialize FastAPI
 app = FastAPI(
@@ -196,7 +200,17 @@ async def sentiment_analysis(request: SentimentRequest):
     Returns: positive/negative/neutral with confidence score
     """
     try:
+        # Check cache first
+        cached_result = cache.get("sentiment", request.text)
+        if cached_result:
+            return SentimentResponse(**cached_result)
+
+        # Analyze
         result = analyze_sentiment_simple(request.text)
+
+        # Cache result (1 hour TTL)
+        cache.set("sentiment", request.text, result, ttl=3600)
+
         return SentimentResponse(**result)
     except Exception as e:
         logger.error(f"Sentiment analysis error: {e}")
@@ -285,7 +299,20 @@ async def lead_scoring(request: LeadRequest):
     Returns: Priority score, suggested action, reasoning
     """
     try:
+        # Generate cache key from lead data
+        cache_key = f"{request.email}:{request.company}:{request.budget}"
+
+        # Check cache
+        cached_result = cache.get("leads", cache_key)
+        if cached_result:
+            return LeadResponse(**cached_result)
+
+        # Score lead
         result = score_lead_simple(request)
+
+        # Cache result (24 hours TTL - leads don't change often)
+        cache.set("leads", cache_key, result, ttl=86400)
+
         return LeadResponse(**result)
     except Exception as e:
         logger.error(f"Lead scoring error: {e}")
@@ -369,7 +396,20 @@ async def phishing_detection(request: PhishingRequest):
     Returns: Risk assessment, indicators, and recommended action
     """
     try:
+        # Cache key from sender+subject+body
+        cache_key = f"{request.sender}:{request.subject}:{request.body[:100]}"
+
+        # Check cache
+        cached_result = cache.get("phishing", cache_key)
+        if cached_result:
+            return PhishingResponse(**cached_result)
+
+        # Detect phishing
         result = detect_phishing_simple(request.sender, request.subject, request.body)
+
+        # Cache result (24 hours TTL - phishing patterns are stable)
+        cache.set("phishing", cache_key, result, ttl=86400)
+
         return PhishingResponse(**result)
     except Exception as e:
         logger.error(f"Phishing detection error: {e}")
@@ -937,8 +977,14 @@ def health_check():
         "version": "1.4.0",
         "contact_form": "enabled",
         "restaurant_analyzer": "enabled",
-        "email_scorer": "enabled"
+        "email_scorer": "enabled",
+        "cache": cache.get_stats()
     }
+
+@app.get("/api/cache/stats")
+def cache_statistics():
+    """Get Redis cache statistics"""
+    return cache.get_stats()
 
 # ============================================================================
 # RUN
