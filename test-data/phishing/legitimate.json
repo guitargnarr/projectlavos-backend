@@ -1,0 +1,5 @@
+{
+  "sender": "notifications@github.com",
+  "subject": "New comment on your pull request #123",
+  "body": "Hi Matthew, John Smith commented on your pull request 'Add sentiment analysis feature'. View the comment at https://github.com/guitargnarr/repo/pull/123"
+}

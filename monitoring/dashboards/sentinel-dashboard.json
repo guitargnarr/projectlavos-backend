@@ -1,0 +1,169 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "sentinel-platform",
+    "title": "Sentinel Platform Monitoring",
+    "tags": ["sentinel", "performance", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "graph",
+        "title": "Request Rate",
+        "targets": [
+          {
+            "expr": "rate(cpp_requests_total[1m])",
+            "legendFormat": "C++ Processor"
+          },
+          {
+            "expr": "rate(http_requests_total{job=\"sentinel-platform\"}[1m])",
+            "legendFormat": "Spring Boot Gateway"
+          }
+        ],
+        "yaxes": [{"format": "reqps"}]
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "graph",
+        "title": "Response Latency",
+        "targets": [
+          {
+            "expr": "cpp_latency_microseconds{quantile=\"avg\"} / 1000",
+            "legendFormat": "Average (ms)"
+          },
+          {
+            "expr": "cpp_latency_microseconds{quantile=\"max\"} / 1000",
+            "legendFormat": "Max (ms)"
+          }
+        ],
+        "yaxes": [{"format": "ms"}]
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+        "type": "stat",
+        "title": "Success Rate",
+        "targets": [
+          {
+            "expr": "(cpp_requests_success / cpp_requests_total) * 100",
+            "instant": true
+          }
+        ],
+        "format": "percent",
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {"color": "red", "value": null},
+            {"color": "yellow", "value": 95},
+            {"color": "green", "value": 99}
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+        "type": "gauge",
+        "title": "Thread Pool Utilization",
+        "targets": [
+          {
+            "expr": "(cpp_threadpool_active / 10) * 100",
+            "instant": true
+          }
+        ],
+        "format": "percent",
+        "min": 0,
+        "max": 100,
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {"color": "green", "value": null},
+            {"color": "yellow", "value": 70},
+            {"color": "red", "value": 90}
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+        "type": "stat",
+        "title": "Queue Depth",
+        "targets": [
+          {
+            "expr": "cpp_threadpool_queued",
+            "instant": true
+          }
+        ],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {"color": "green", "value": null},
+            {"color": "yellow", "value": 50},
+            {"color": "red", "value": 100}
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "type": "graph",
+        "title": "Endpoint Distribution",
+        "targets": [
+          {
+            "expr": "rate(cpp_endpoint_requests{endpoint=\"sentiment\"}[5m])",
+            "legendFormat": "Sentiment Analysis"
+          },
+          {
+            "expr": "rate(cpp_endpoint_requests{endpoint=\"phishing\"}[5m])",
+            "legendFormat": "Phishing Detection"
+          },
+          {
+            "expr": "rate(cpp_endpoint_requests{endpoint=\"leads\"}[5m])",
+            "legendFormat": "Lead Scoring"
+          }
+        ],
+        "stack": true,
+        "yaxes": [{"format": "reqps"}]
+      },
+      {
+        "id": 7,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "type": "graph",
+        "title": "Redis Cache Performance",
+        "targets": [
+          {
+            "expr": "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total)",
+            "legendFormat": "Hit Rate"
+          }
+        ],
+        "yaxes": [{"format": "percentunit"}]
+      },
+      {
+        "id": 8,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "type": "graph",
+        "title": "System Resources",
+        "targets": [
+          {
+            "expr": "node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes",
+            "legendFormat": "Memory Available"
+          },
+          {
+            "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m]))",
+            "legendFormat": "CPU Usage"
+          }
+        ],
+        "yaxes": [{"format": "percentunit"}]
+      }
+    ],
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    }
+  },
+  "overwrite": true
+}
