@@ -6,6 +6,7 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 #include "phishing_features.h"
 
 // Global variables for thread synchronization
@@ -336,9 +337,19 @@ std::string process_request(const std::string& request) {
         std::string text = extractJsonField(body, "text");
 
         if (!text.empty()) {
-            // Extract all 39 PhishGuard features
+            // Extract all 39 PhishGuard features with timing
             PhishingFeatureExtractor extractor;
+
+            auto start = std::chrono::high_resolution_clock::now();
             auto features = extractor.extractAllFeatures(text);
+            auto end = std::chrono::high_resolution_clock::now();
+
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            double processing_time_ms = duration.count() / 1000.0;
+
+            // Add timing to features
+            features["_processing_time_ms"] = processing_time_ms;
+
             std::string jsonResponse = extractor.toJson(features);
 
             response = "HTTP/1.1 200 OK\r\n"
