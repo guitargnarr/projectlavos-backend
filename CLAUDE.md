@@ -28,7 +28,7 @@ Spring Boot Gateway (8080)
 # Start all services
 ./start-dev.sh
 
-# Run tests (11/11 FastAPI, 5 Spring Boot)
+# Run tests (41/41 FastAPI with 98% coverage, 5 Spring Boot)
 ./run-tests.sh
 
 # Benchmark performance
@@ -59,8 +59,16 @@ Spring Boot Gateway (8080)
 - Performance regression: Run benchmarks
 - Cache invalidation: 1 hour (sentiment), 24 hours (patterns)
 
-## Recent Additions (Day 1 - Nov 13)
+## Recent Additions
 
+**Phase 1 Complete (Nov 18)**
+- ✅ Test coverage: 98% (41/41 tests passing)
+- ✅ Fixed syntax errors in restaurant analyzer
+- ✅ Comprehensive test suites for all 6 API endpoints
+- ✅ Error handling and edge case coverage
+- ✅ Cache hit/miss scenarios tested
+
+**Day 1 (Nov 13)**
 - ✅ PhishGuard 39 features ported to C++ (320 lines)
 - ✅ Redis caching integrated (FastAPI complete, Spring Boot pending)
 - ✅ 1,016 lines C++ written
