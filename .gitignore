@@ -23,3 +23,6 @@ __pycache__/
 
 # Redis
 dump.rdb
+.coverage
+coverage.xml
+htmlcov/
