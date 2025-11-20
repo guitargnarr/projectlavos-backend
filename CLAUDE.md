@@ -68,6 +68,5 @@ Spring Boot Gateway (8080)
 
 ## Documentation References
 
-- Memory system: @~/.claude/SYSTEM_DOCUMENTATION.md
-- Optimal workflows: @~/.claude/WORKFLOWS.md
-- Platform plan: @PLATFORM_CONSOLIDATION_PLAN.md
+- Memory system: @~/.claude/archive/SYSTEM_DOCUMENTATION.md
+- Optimal workflows: @~/.claude/archive/WORKFLOWS.md
