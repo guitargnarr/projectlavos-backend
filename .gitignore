@@ -26,3 +26,9 @@ dump.rdb
 .coverage
 coverage.xml
 htmlcov/
+
+# Session notes (private)
+*ULTRATHINK*.md
+*_ANALYSIS.md
+WEEK*.md
+.archive/
